@@ -51,7 +51,7 @@ export default function LoginPage() {
           login
         </button>
         <p className="mt-3 text-center">
-          don&apos;t have an account yet?{' '} '}
+          "don't have an account yet?"{' '}
           <Link href="/signup" className="text-primary">
             signup here
           </Link>
