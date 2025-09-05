@@ -1,14 +1,22 @@
+// src/components/ChatWindow.jsx
 "use client";
+
 import { useEffect, useState } from "react";
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc } from "firebase/firestore";
 import { db, auth } from "@/firebaseConfig";
 
-const ChatWindow = () => {
+const ChatWindow = ({ activeChatId }) => {
   const [messages, setMessages] = useState([]);
   const currentUserUid = auth.currentUser?.uid;
 
   useEffect(() => {
-    const q = query(collection(db, "messages"), orderBy("createdAt"));
+    if (!activeChatId) return;
+
+    const messagesCollectionRef = activeChatId === "global_messages"
+      ? collection(db, "global_messages")
+      : collection(db, "chats", activeChatId, "messages");
+
+    const q = query(messagesCollectionRef, orderBy("createdAt"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const messagesData = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -17,11 +25,15 @@ const ChatWindow = () => {
       setMessages(messagesData);
     });
     return () => unsubscribe();
-  }, []);
+  }, [activeChatId]);
 
   const deleteMessage = async (messageId) => {
+    const messagesCollectionRef = activeChatId === "global_messages"
+      ? collection(db, "global_messages")
+      : collection(db, "chats", activeChatId, "messages");
+
     try {
-      await deleteDoc(doc(db, "messages", messageId));
+      await deleteDoc(doc(messagesCollectionRef, messageId));
     } catch (error) {
       console.error("Gagal menghapus pesan: ", error);
       alert("Gagal menghapus pesan. Coba lagi.");
@@ -29,7 +41,7 @@ const ChatWindow = () => {
   };
 
   return (
-    <div className="flex-grow-1 overflow-auto p-4 d-flex flex-column" style={{ gap: '1rem', backgroundColor: 'white' }}>
+    <div className="flex-grow-1 overflow-auto p-4 d-flex flex-column" style={{ gap: '1rem', backgroundColor: '#f8f9fa' }}>
       {messages.length > 0 ? (
         messages.map((msg) => (
           <div
@@ -43,9 +55,9 @@ const ChatWindow = () => {
               <div className="text-end mt-2">
                 <button
                   onClick={() => deleteMessage(msg.id)}
-                  className="btn btn-sm btn-outline-light"
+                  className="btn btn-sm btn-outline-primary"
                 >
-                  delete
+                  Hapus
                 </button>
               </div>
             )}
@@ -53,10 +65,11 @@ const ChatWindow = () => {
         ))
       ) : (
         <p className="text-center mt-4 text-secondary">
-          write message here !!
+          Belum ada pesan. Mulai kirim pesan!
         </p>
       )}
     </div>
   );
 };
+
 export default ChatWindow;
